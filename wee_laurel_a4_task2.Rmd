@@ -1,0 +1,17 @@
+---
+title: 'Task 2: Parameter Estimation- Wild Fish Catch'
+author: "Laurel Wee"
+date: "3/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+fish_catch <- read.csv(here("data","fish_catch.csv")) %>% 
+  slice(-(1:4)) %>% 
+  rename("year"="World.Wild.Fish.Catch.and.Farmed.Fish.Production..1950.2012","wild_catch"="X","farmed_fish"="X.1","total_fish"="X.2")
+```
+

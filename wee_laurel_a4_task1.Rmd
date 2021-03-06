@@ -1,0 +1,24 @@
+---
+title: 'Task 1: Agglomerative Hierarchical Clustering'
+author: "Laurel Wee"
+date: "3/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+library(here)
+```
+
+```{r}
+#temp<-tempfile(fileext = ".csv")
+#download.file("https://docs.google.com/spreadsheets/d/1HEE_jJabVW2zUSpXMyYMsOg-1KSnI4QMbudVkZKhxIg/edit#gid=1105963460", temp)
+#out<-unzip(temp,exdir = tempdir())
+#stream_chem <- read.csv(out, sep = ";")
+```
+```{r}
+stream_chem <- read.csv(here("data","sbc_lter_registered_stream_chemistry - sbc_lter_registered_stream_chemistry.csv"))
+```
+
