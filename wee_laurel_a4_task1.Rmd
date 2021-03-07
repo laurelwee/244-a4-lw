@@ -10,15 +10,47 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 library(tidyverse)
 library(here)
+library(naniar)
+library(NbClust)
 ```
 
 ```{r}
-#temp<-tempfile(fileext = ".csv")
-#download.file("https://docs.google.com/spreadsheets/d/1HEE_jJabVW2zUSpXMyYMsOg-1KSnI4QMbudVkZKhxIg/edit#gid=1105963460", temp)
-#out<-unzip(temp,exdir = tempdir())
-#stream_chem <- read.csv(out, sep = ";")
+stream_chem <- read.csv(here("data","sbc_lter_registered_stream_chemistry - sbc_lter_registered_stream_chemistry.csv")) %>% 
+  na_if(-999.0)%>% 
+  select(site_code,nh4_uM,no3_uM,po4_uM)
+```
+
+```{r}
+stream_avg <-stream_chem %>% 
+  group_by(site_code) %>% 
+  summarise_all(mean, na.rm=TRUE)
+
+stream_scale <- stream_avg %>% 
+  select(nh4_uM,no3_uM,po4_uM) %>% 
+  scale()
+
+rownames(stream_scale)<-stream_avg$site_code
+
+```
+
+```{r}
+# Compute dissimilarity values (Euclidean distances):
+euc_distance <- dist(stream_scale, method = "euclidean")
+
+View(euc_distance)
+
+# Hierarchical clustering (complete linkage)
+hc_complete <- hclust(euc_distance, method = "complete" ) 
+
+# Plot it (base plot):
+plot(hc_complete, cex = 0.6, hang = -1)
 ```
 ```{r}
-stream_chem <- read.csv(here("data","sbc_lter_registered_stream_chemistry - sbc_lter_registered_stream_chemistry.csv"))
+
+ggdendrogram(hc_complete,
+             rotate = TRUE)+
+  theme_minimal()+
+  labs(x="Site")
+  
 ```
 
