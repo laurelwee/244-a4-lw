@@ -2,31 +2,43 @@
 title: 'Task 2: Parameter Estimation- Wild Fish Catch'
 author: "Laurel Wee"
 date: "3/6/2021"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
 ```
 
 ```{r}
+# Download and read in `fish_catch.csv` data from https://drive.google.com/file/d/1sKjDqxbpWD7vd7Kt4tBNpl6pHEf_LnIe/view?usp=sharing
 fish_catch <- read.csv(here("data","fish_catch.csv")) %>% 
-  slice(-(1:4)) %>% 
+  slice(-(1:4)) %>% # Omit the first and last 4 rows of non-numeric data
   head(-4) %>% 
-  rename("year"="World.Wild.Fish.Catch.and.Farmed.Fish.Production..1950.2012","wild_catch"="X","farmed_fish"="X.1","total_fish"="X.2") #%>% 
-  
-# class(fish_catch$year)
-# Character
+  rename("year"="World.Wild.Fish.Catch.and.Farmed.Fish.Production..1950.2012","wild_catch"="X","farmed_fish"="X.1","total_fish"="X.2") # Rename columns
 
+# Check the class of `year` variable
+# class(fish_catch$year)
+# Outcome: Character
+
+# Make a subset of data for wild caught fish counts and make new year column, data frame will be used to make an equation so values must be numeric
 fish_wild<- fish_catch %>% 
-  mutate(year = as.numeric(year)) %>% 
-  mutate(year_eq = ((year)-1950)) %>% 
+  mutate(year = as.numeric(year)) %>% # Change `year` to numeric
+  mutate(year_eq = ((year)-1950)) %>%  # Create new column with first year 1950 =0 
   select(year_eq, wild_catch) %>% 
-  mutate(wild_catch=as.numeric(wild_catch))
-# class(fish_year$year) 
-# Numeric
+  mutate(wild_catch=as.numeric(wild_catch)) # Make sure that the `wild_catch` values are numeric
+# Make sure that the new year column `year_eq` is numeric
+# class(fish_wild$year_eq) 
+# Outcome: Numeric
 ```
+
+### Part a: Exploratory graph of Wild Catch over Time
 ```{r}
+
+#Plot exploratory visualization of the `wild_catch` vs `year_eq` and the `log(wild_catch)` vs `year-eq`
 ggplot(data = fish_wild, aes(x = year_eq, y = wild_catch)) +
   geom_point() +
   labs(x = "Year", y = "Wild Caught Fish")
@@ -36,6 +48,12 @@ ggplot(data = fish_wild, aes(x = year_eq, y = log(wild_catch))) +
   theme_minimal() +
   labs(x = "Year", y = "ln(wild caught fish)")
 ```
+### Part b: Wild Catch over Time trand
+
+The graphs shown above are logistic.
+
+$P(t)=\frac{K}{1+Ae^{-kt}}$
+
 
 ```{r}
 fish_exp <- fish_wild %>% 
@@ -48,7 +66,17 @@ lm_k
 #k ~ 0.025
 # K ~ 93
 # (93-17)/17= ~4.5
+```
+- $K$ is the carrying capacity which is ~ 93 (million)
+- $A$ is $\frac{K-P_0}{P_0}$  ${P_0} = 17$  $\frac{93-17}{17} = 4.5$ (million)
+- $k$ is the growth rate constant found above $k= 0.025$
 
+
+
+### Part c: Parameters for Model describing Wild Catch over time
+#### Using nonlinear least squares
+```{r}
+#Using the predicted initial estimates from part b, do a nonlinear least squares
 fish_nls <- nls(wild_catch ~ K/(1 + A*exp(-r*year_eq)),
               data = fish_wild,
               start = list(K = 93, A = 4.5, r = 0.025),
@@ -60,15 +88,14 @@ summary(fish_nls)
 # Use broom:: functions to get model outputs in tidier format: 
 model_out <- broom::tidy(fish_nls) # Use View(model_out) to see the tidy model output.
 
-# Want to just get one of these?  
-A_est <- model_out$estimate[2] # Gets the first rown in the estimate column.
-```
-```{r}
 p_predict <- predict(fish_nls)
 
 # Bind predictions to original data frame:
 fish_complete <- data.frame(fish_wild, p_predict)
+```
+### Part d: Original data compared to model output
 
+```{r}
 # Plot them all together:
 ggplot(data = fish_complete, aes(x = year_eq, y = wild_catch)) +
   geom_point() +
