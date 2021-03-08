@@ -12,6 +12,67 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 fish_catch <- read.csv(here("data","fish_catch.csv")) %>% 
   slice(-(1:4)) %>% 
-  rename("year"="World.Wild.Fish.Catch.and.Farmed.Fish.Production..1950.2012","wild_catch"="X","farmed_fish"="X.1","total_fish"="X.2")
+  head(-4) %>% 
+  rename("year"="World.Wild.Fish.Catch.and.Farmed.Fish.Production..1950.2012","wild_catch"="X","farmed_fish"="X.1","total_fish"="X.2") #%>% 
+  
+# class(fish_catch$year)
+# Character
+
+fish_wild<- fish_catch %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(year_eq = ((year)-1950)) %>% 
+  select(year_eq, wild_catch) %>% 
+  mutate(wild_catch=as.numeric(wild_catch))
+# class(fish_year$year) 
+# Numeric
+```
+```{r}
+ggplot(data = fish_wild, aes(x = year_eq, y = wild_catch)) +
+  geom_point() +
+  labs(x = "Year", y = "Wild Caught Fish")
+
+ggplot(data = fish_wild, aes(x = year_eq, y = log(wild_catch))) +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Year", y = "ln(wild caught fish)")
+```
+
+```{r}
+fish_exp <- fish_wild %>% 
+  mutate(ln_wild = log(wild_catch))
+
+# Model linear to get *k* estimate (the slope of this linear equation is an estimate of the growth rate constant):
+lm_k <- lm(ln_wild ~ year_eq, data = fish_exp)
+lm_k
+
+#k ~ 0.025
+# K ~ 93
+# (93-17)/17= ~4.5
+
+fish_nls <- nls(wild_catch ~ K/(1 + A*exp(-r*year_eq)),
+              data = fish_wild,
+              start = list(K = 93, A = 4.5, r = 0.025),
+              trace = TRUE
+              )
+
+summary(fish_nls)
+
+# Use broom:: functions to get model outputs in tidier format: 
+model_out <- broom::tidy(fish_nls) # Use View(model_out) to see the tidy model output.
+
+# Want to just get one of these?  
+A_est <- model_out$estimate[2] # Gets the first rown in the estimate column.
+```
+```{r}
+p_predict <- predict(fish_nls)
+
+# Bind predictions to original data frame:
+fish_complete <- data.frame(fish_wild, p_predict)
+
+# Plot them all together:
+ggplot(data = fish_complete, aes(x = year_eq, y = wild_catch)) +
+  geom_point() +
+  geom_line(aes(x = year_eq, y = p_predict)) +
+  theme_minimal()
 ```
 
