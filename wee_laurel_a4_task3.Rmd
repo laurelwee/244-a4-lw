@@ -1,0 +1,52 @@
+---
+title: 'Task 3: Bootstrapped Confidence Interval for Proportions'
+author: "Laurel Wee"
+date: "3/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(boot)
+library(patchwork)
+```
+
+```{r}
+#male=628, female= 1230, genderqueer=36, transgener=7
+student <- c(1:36)
+conduct <-c(rep(1,22), rep(0,14))
+df <- data.frame(student,conduct)
+
+```
+
+1230="woman",628="man",36="queergender",7="transgender"
+```{r}
+mean_fun <- function (x,i) {mean(x[i])}
+
+conduct_nc <- df$conduct
+
+conductboot_10k <- boot(conduct_nc, 
+                 statistic = mean_fun, 
+                 R = 10000)
+# conductboot_10k$t0 
+# Outcome: 0.6111111 which matches our 61%
+conductboot_10k_df <- data.frame(bs_mean = conductboot_10k$t)
+```
+
+```{r}
+# The histogram of the original sample:
+p1 <- ggplot(data = df, aes(x = conduct)) +
+  geom_histogram()
+
+# Histogram of 10000 bootstrap sample means:
+p2 <- ggplot(data = conductboot_10k_df, aes(x = bs_mean)) +
+  geom_histogram()
+
+(p1+p2 )& theme_minimal()
+```
+
+
+
+
+
+
