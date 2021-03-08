@@ -2,51 +2,69 @@
 title: 'Task 3: Bootstrapped Confidence Interval for Proportions'
 author: "Laurel Wee"
 date: "3/7/2021"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  results = FALSE)
+library(tidyverse)
 library(boot)
 library(patchwork)
 ```
 
+### Part a: Sample Vector, Proportions and 10k Bootstraped Samples
+#### Create sample vector, proportions, and find 10,000 bootstrap samples for queer-gendered students that responded that they experienced hositle or exlusionary cconduct at UCSB.
 ```{r}
 #male=628, female= 1230, genderqueer=36, transgener=7
-student <- c(1:36)
+# Create data frame where 22 out of 36 queergender students said they'd experienced misconduct, 1 yes experienced 0 is a no response
 conduct <-c(rep(1,22), rep(0,14))
-df <- data.frame(student,conduct)
+df <- data.frame(conduct)
 
-```
+# Get 95% CI for t-distribution
+t.test(df$conduct)
 
-1230="woman",628="man",36="queergender",7="transgender"
-```{r}
-mean_fun <- function (x,i) {mean(x[i])}
+# Create a function to find the proportion/mean
+proportion_fun <- function (x,i) {mean(x[i])}
 
 conduct_nc <- df$conduct
 
 conductboot_10k <- boot(conduct_nc, 
-                 statistic = mean_fun, 
+                 statistic = proportion_fun, 
                  R = 10000)
 # conductboot_10k$t0 
 # Outcome: 0.6111111 which matches our 61%
 conductboot_10k_df <- data.frame(bs_mean = conductboot_10k$t)
 ```
 
+### Part b: Histogram of Bootstraped Proportions
+
 ```{r}
 # The histogram of the original sample:
-p1 <- ggplot(data = df, aes(x = conduct)) +
-  geom_histogram()
+#p1 <- ggplot(data = df, aes(x = conduct)) +
+  #geom_histogram()
 
 # Histogram of 10000 bootstrap sample means:
 p2 <- ggplot(data = conductboot_10k_df, aes(x = bs_mean)) +
   geom_histogram()
 
-(p1+p2 )& theme_minimal()
+p2
 ```
 
+### Part c: Confidence Interval and Conclusion
 
+```{r}
+boot.ci(conductboot_10k, conf = 0.95)
+```
 
+For a 95% confidence interval we expect 95 out of 100 calculated confidence intervals will contain the actual proportion of queer-gender students that experienced an exclusionary, hostile or intimidating experience at UCSB. 95 of 100 calculated proportions will fall between 0.44 and 0.78, our original data was a proportion of 0.61.
 
+#### Data Citation
+2014 UCSB Campus Climate Project Final Report. Rankin & Associates Consulting. http://campusclimate.ucop.edu/_common/files/pdf-climate/ucsb-full-report.pdf
 
 
