@@ -8,10 +8,18 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  message = FALSE, 
+  warning = FALSE,
+  results = FALSE)
 library(tidyverse)
 library(here)
+library(kableExtra)
 ```
+
+### Overview
+Here we explore the global wild fish catch from 1950 to 2012. We will model the trend in wild fish caught over time using parameters estimated by nonlinear least squares.
 
 ```{r}
 # Download and read in `fish_catch.csv` data from https://drive.google.com/file/d/1sKjDqxbpWD7vd7Kt4tBNpl6pHEf_LnIe/view?usp=sharing
@@ -48,14 +56,16 @@ ggplot(data = fish_wild, aes(x = year_eq, y = log(wild_catch))) +
   theme_minimal() +
   labs(x = "Year", y = "ln(wild caught fish)")
 ```
+
 ### Part b: Wild Catch over Time trand
 
-The graphs shown above are logistic.
+The graphs above show logistic growth over time that reach a carrying capacity $K$. The model for logistic population growth is:
 
 $P(t)=\frac{K}{1+Ae^{-kt}}$
 
 
 ```{r}
+# Find initial estimates and parameters for logistic growth model
 fish_exp <- fish_wild %>% 
   mutate(ln_wild = log(wild_catch))
 
@@ -67,14 +77,16 @@ lm_k
 # K ~ 93
 # (93-17)/17= ~4.5
 ```
-- $K$ is the carrying capacity which is ~ 93 (million)
+- $K$ is the carrying capacity which is ~ $93$ (million)
 - $A$ is $\frac{K-P_0}{P_0}$  ${P_0} = 17$  $\frac{93-17}{17} = 4.5$ (million)
 - $k$ is the growth rate constant found above $k= 0.025$
 
 
-
 ### Part c: Parameters for Model describing Wild Catch over time
 #### Using nonlinear least squares
+
+**Table:** Parameter outcomes for model describing wild catcch over time. $K$ and $A$ are coefficients explaining population limts in *Millions of Fish Caught*, $r$ is the rate change of $t$ time. 
+
 ```{r}
 #Using the predicted initial estimates from part b, do a nonlinear least squares
 fish_nls <- nls(wild_catch ~ K/(1 + A*exp(-r*year_eq)),
@@ -86,20 +98,35 @@ fish_nls <- nls(wild_catch ~ K/(1 + A*exp(-r*year_eq)),
 summary(fish_nls)
 
 # Use broom:: functions to get model outputs in tidier format: 
-model_out <- broom::tidy(fish_nls) # Use View(model_out) to see the tidy model output.
+model_out <- broom::tidy(fish_nls) %>% 
+  mutate(p.value = case_when(p.value <0.0001 ~ "<0.0001"))
 
+model_out %>% 
+  kable(col.names = c(" ","Coefficient","Standard error","Test statistic","p-value"), digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))#to see the tidy model output.
+
+```
+
+### Part d: Original data compared to model output
+
+$$P(t) = \frac{100.3}{1+4.3e^{-0.07t}}$$
+
+```{r}
+# Predict the population for 1950-2012, `year_eq` 0 to 62
 p_predict <- predict(fish_nls)
 
 # Bind predictions to original data frame:
 fish_complete <- data.frame(fish_wild, p_predict)
-```
-### Part d: Original data compared to model output
 
-```{r}
 # Plot them all together:
 ggplot(data = fish_complete, aes(x = year_eq, y = wild_catch)) +
   geom_point() +
-  geom_line(aes(x = year_eq, y = p_predict)) +
-  theme_minimal()
+  geom_line(aes(x = year_eq, y = p_predict, color= "")) +
+  theme_minimal()+
+  theme(legend.position = c(.85, .50))+
+  labs(x="Time", y="Wild Fish Caught (millions)", title = "Model Parameter Estimation and Wild Fish Catch Data (WEE)", colour="Model")
 ```
 
+#### Data Citation
+
+Global wild fish catch and aquaculture production, compiled by Earth Policy Institute with 1950-2010 from U.N. Food and Agriculture Organization (FAO), Global Capture Production and Global Aquaculture Production, electronic databases, at www.fao.org/fishery/topic/16140/en.
