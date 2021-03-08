@@ -24,17 +24,16 @@ library(patchwork)
 #male=628, female= 1230, genderqueer=36, transgener=7
 # Create data frame where 22 out of 36 queergender students said they'd experienced misconduct, 1 yes experienced 0 is a no response
 conduct <-c(rep(1,22), rep(0,14))
-df <- data.frame(conduct)
+
 
 # Get 95% CI for t-distribution
-t.test(df$conduct)
+t.test(conduct)
 
 # Create a function to find the proportion/mean
 proportion_fun <- function (x,i) {mean(x[i])}
 
-conduct_nc <- df$conduct
-
-conductboot_10k <- boot(conduct_nc, 
+# Create 10,000 bootstrap samples using the proportion function created above to calculate the proportion of each
+conductboot_10k <- boot(conduct, 
                  statistic = proportion_fun, 
                  R = 10000)
 # conductboot_10k$t0 
@@ -59,6 +58,7 @@ p2
 ### Part c: Confidence Interval and Conclusion
 
 ```{r}
+# Confidence interval for bootstraped samples
 boot.ci(conductboot_10k, conf = 0.95)
 ```
 
